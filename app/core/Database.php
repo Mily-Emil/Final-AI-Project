@@ -200,7 +200,7 @@ class Database {
 	 */
 	public function getDiagnostics(){
 		$tables = $this->getTables();
-		$defaultTables = ['users', 'mahasiswa', 'pengaturan', 'aktivitas_log'];
+		$defaultTables = ['users', 'nutrition_scans', 'daily_menus', 'food_references', 'pengaturan', 'aktivitas_log'];
 		$missingTables = array_diff($defaultTables, $tables);
 		$serverVersion = ($this->con) ? @$this->con->server_info : null;
 
@@ -217,7 +217,9 @@ class Database {
 			'missing_tables' => array_values($missingTables),
 			'is_schema_ready' => empty($missingTables) && count($tables) > 0,
 			'users_count' => $this->getTableRowCount('users'),
-			'mahasiswa_count' => $this->getTableRowCount('mahasiswa')
+			'nutrition_scans_count' => $this->getTableRowCount('nutrition_scans'),
+			'daily_menus_count' => $this->getTableRowCount('daily_menus'),
+			'food_references_count' => $this->getTableRowCount('food_references')
 		];
 	}
 

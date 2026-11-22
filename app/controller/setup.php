@@ -68,7 +68,7 @@ class setup extends Controller {
         $result = $db->importSqlFile($sqlPath);
 
         if ($result['success']) {
-            $msg = 'Inisialisasi database db_project dan tabel bawaan berhasil diselesaikan!';
+            $msg = 'Inisialisasi database db_project untuk AI-Powered Nutrition Analyzer System UNKLAB berhasil diselesaikan!';
             if ($isAjax) {
                 header('Content-Type: application/json');
                 echo json_encode(['success' => true, 'message' => $msg]);

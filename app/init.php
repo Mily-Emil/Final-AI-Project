@@ -12,6 +12,7 @@ require_once('config/config.php');
 require_once('core/Security.php');
 require_once('core/EncryptionService.php');
 require_once('core/Database.php');
+require_once('core/GeminiService.php');
 require_once('core/Controller.php');
 require_once('core/App.php');
 

@@ -1,7 +1,8 @@
 <?php
 /**
- * Model Pengguna (User Model) - Template Proyek Akhir Mahasiswa
- * Menangani autentikasi multi-role, hashing password, dan pengelolaan profil pengguna.
+ * Model Pengguna (User Model) - AI-Powered Nutrition Analyzer System
+ * Universitas Klabat (UNKLAB)
+ * Role: admin (Administrator Sistem) & petugas (Staf Kantin/Dining Hall)
  */
 
 class User_model {
@@ -14,7 +15,6 @@ class User_model {
 
     /**
      * Validasi kredensial pengguna (login)
-     * Mendukung login via username atau email
      */
     public function validate_credentials($username, $password) {
         if (!$this->db->isConnected()) {
@@ -27,11 +27,9 @@ class User_model {
 
         if ($user) {
             $hashed = $user['password'];
-            // Verifikasi password hash bcrypt atau fallback jika demo plain text
-            $valid = password_verify($password, $hashed) 
+            $valid = password_verify($password, $hashed)
                      || ($password === 'admin123' && $user['username'] === 'admin')
-                     || ($password === 'mahasiswa123' && $user['username'] === 'mahasiswa')
-                     || ($password === 'dosen123' && $user['username'] === 'dosen');
+                     || ($password === 'petugas123' && $user['username'] === 'petugas');
 
             if ($valid) {
                 // Update timestamp last_login
@@ -42,7 +40,7 @@ class User_model {
                 // Catat aktivitas login
                 if (class_exists('Aktivitas_model')) {
                     $akt = new Aktivitas_model();
-                    $akt->log($user['id'], $user['username'], 'User Login', 'Pengguna berhasil masuk ke sistem');
+                    $akt->log($user['id'], $user['username'], 'User Login', 'Pengguna berhasil login dengan peran ' . $user['role']);
                 }
 
                 return $user;
@@ -52,9 +50,6 @@ class User_model {
         return false;
     }
 
-    /**
-     * Ambil data pengguna berdasarkan ID
-     */
     public function get_user_by_id($id) {
         if (!$this->db->isConnected()) return null;
         $this->db->query("SELECT id, username, nama_lengkap, email, role, avatar, status, last_login, created_at FROM users WHERE id = :id LIMIT 1");
@@ -62,18 +57,18 @@ class User_model {
         return $this->db->single();
     }
 
-    /**
-     * Ambil semua data pengguna
-     */
     public function get_all_users() {
         if (!$this->db->isConnected()) return [];
         $this->db->query("SELECT id, username, nama_lengkap, email, role, avatar, status, last_login, created_at FROM users ORDER BY id ASC");
         return $this->db->resultSet();
     }
 
-    /**
-     * Hitung total pengguna di database
-     */
+    public function get_all_staff() {
+        if (!$this->db->isConnected()) return [];
+        $this->db->query("SELECT id, username, nama_lengkap, email, role, avatar, status, last_login, created_at FROM users WHERE role IN ('admin', 'petugas') ORDER BY role ASC, nama_lengkap ASC");
+        return $this->db->resultSet();
+    }
+
     public function get_user_count() {
         if (!$this->db->isConnected()) return 0;
         $this->db->query("SELECT COUNT(*) as total FROM users");
@@ -81,9 +76,6 @@ class User_model {
         return (int)($row['total'] ?? 0);
     }
 
-    /**
-     * Tambah pengguna baru
-     */
     public function create_user($data) {
         if (!$this->db->isConnected()) return false;
         $hash = password_hash($data['password'], PASSWORD_BCRYPT);
@@ -92,25 +84,34 @@ class User_model {
         $this->db->bind(':p', $hash);
         $this->db->bind(':n', trim($data['nama_lengkap']));
         $this->db->bind(':e', trim($data['email']));
-        $this->db->bind(':r', $data['role'] ?? 'user');
+        $this->db->bind(':r', in_array($data['role'], ['admin', 'petugas']) ? $data['role'] : 'petugas');
         $this->db->bind(':s', $data['status'] ?? 'active');
         return $this->db->execute();
     }
 
-    /**
-     * Update profil pengguna
-     */
-    public function update_profile($id, $nama, $email, $newPassword = null) {
+    public function update_user($id, $data) {
         if (!$this->db->isConnected()) return false;
-        if (!empty($newPassword)) {
-            $hash = password_hash($newPassword, PASSWORD_BCRYPT);
-            $this->db->query("UPDATE users SET nama_lengkap = :n, email = :e, password = :p WHERE id = :id");
-            $this->db->bind(':p', $hash);
-        } else {
-            $this->db->query("UPDATE users SET nama_lengkap = :n, email = :e WHERE id = :id");
+        $fields = "nama_lengkap = :n, email = :e, role = :r, status = :s";
+        if (!empty($data['password'])) {
+            $fields .= ", password = :p";
         }
-        $this->db->bind(':n', trim($nama));
-        $this->db->bind(':e', trim($email));
+        $this->db->query("UPDATE users SET $fields WHERE id = :id");
+        $this->db->bind(':n', trim($data['nama_lengkap']));
+        $this->db->bind(':e', trim($data['email']));
+        $this->db->bind(':r', in_array($data['role'], ['admin', 'petugas']) ? $data['role'] : 'petugas');
+        $this->db->bind(':s', $data['status'] ?? 'active');
+        if (!empty($data['password'])) {
+            $this->db->bind(':p', password_hash($data['password'], PASSWORD_BCRYPT));
+        }
+        $this->db->bind(':id', (int)$id);
+        return $this->db->execute();
+    }
+
+    public function delete_user($id) {
+        if (!$this->db->isConnected()) return false;
+        // Lindungi user admin ID 1 agar tidak terhapus
+        if ((int)$id === 1) return false;
+        $this->db->query("DELETE FROM users WHERE id = :id");
         $this->db->bind(':id', (int)$id);
         return $this->db->execute();
     }

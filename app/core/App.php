@@ -7,7 +7,10 @@ class App {
 
 	public function __construct(){
 		// Global Gateway WAF Inspection (Query parameters, POST payload, and raw query string)
-		$paramsToCheck = array_merge($_GET, $_POST);
+		// Filter out raw image payload keys so base64 binary chunks are not misidentified by regex
+		$filteredPost = $_POST;
+		unset($filteredPost['image_base64'], $filteredPost['image_data'], $filteredPost['photo']);
+		$paramsToCheck = array_merge($_GET, $filteredPost);
 		if (!empty($_SERVER['QUERY_STRING'])) {
 			$paramsToCheck['__raw_query__'] = $_SERVER['QUERY_STRING'];
 		}

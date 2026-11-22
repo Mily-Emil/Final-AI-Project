@@ -27,7 +27,9 @@ class Controller {
 
 	// Proactive SQLi, RCE/PHP2Shell, Path Traversal, and XSS inspection on request parameters
 	public function check_security_payloads(){
-		$paramsToCheck = array_merge($_GET, $_POST, $_COOKIE);
+		$filteredPost = $_POST;
+		unset($filteredPost['image_base64'], $filteredPost['image_data'], $filteredPost['photo']);
+		$paramsToCheck = array_merge($_GET, $filteredPost, $_COOKIE);
 		if (!empty($_SERVER['QUERY_STRING'])) {
 			$paramsToCheck['__raw_query__'] = $_SERVER['QUERY_STRING'];
 		}

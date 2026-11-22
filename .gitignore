@@ -1,0 +1,16 @@
+# Environment & Secrets
+.env
+.env.local
+
+# Uploaded runtime files
+public/uploads/scans/*
+public/uploads/menus/*
+!public/uploads/scans/.gitkeep
+!public/uploads/menus/.gitkeep
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

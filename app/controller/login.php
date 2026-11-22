@@ -1,7 +1,8 @@
 <?php
 /**
- * Controller Autentikasi (Login / Logout) - Template Proyek Akhir Mahasiswa
- * Menangani login multi-role (Admin, Mahasiswa, Dosen) dengan perlindungan CSRF.
+ * Controller Autentikasi (Login / Logout)
+ * AI-Powered Nutrition Analyzer System - Universitas Klabat (UNKLAB)
+ * Role: admin (Administrator Sistem) & petugas (Staf Kantin/Dining Hall)
  */
 
 class login extends Controller {
@@ -9,19 +10,25 @@ class login extends Controller {
     public function index() {
         $this->start_default_session_app();
 
-        // Jika sudah login, redirect langsung ke Dashboard
+        // Jika sudah login, redirect sesuai perannya
         if (!empty($_SESSION['user-id'])) {
-            header('Location: ' . APP_PATH . '/dashboard/');
-            exit();
+            $role = $_SESSION['user-role'] ?? '';
+            if ($role === 'admin') {
+                header('Location: ' . APP_PATH . '/admin/');
+                exit();
+            } else {
+                header('Location: ' . APP_PATH . '/petugas/');
+                exit();
+            }
         }
 
-        // Ambil pesan error login jika ada
         $error = $_SESSION['login_error'] ?? null;
         unset($_SESSION['login_error']);
 
         $data = [
-            'title' => 'Login Sistem - ' . APP_NAME,
+            'title' => 'Login Petugas & Administrator - ' . APP_SHORT_NAME,
             'app_name' => APP_NAME,
+            'app_institution' => APP_INSTITUTION,
             'error' => $error,
             'csrf_token' => $this->get_csrf_token()
         ];
@@ -53,10 +60,10 @@ class login extends Controller {
             exit();
         }
 
-        // Periksa status database terlebih dahulu
+        // Periksa status database
         $db = new Database();
         if (!$db->isConnected()) {
-            $_SESSION['login_error'] = 'Koneksi database db_project belum terhubung. Periksa konfigurasi MySQL Anda.';
+            $_SESSION['login_error'] = 'Koneksi database belum terhubung. Pastikan MySQL di XAMPP berstatus RUNNING.';
             header('Location: ' . APP_PATH . '/login/');
             exit();
         }
@@ -65,7 +72,7 @@ class login extends Controller {
         $user = $userModel ? $userModel->validate_credentials($username, $password) : false;
 
         if ($user) {
-            // Regenerate session id untuk keamanan (mencegah session fixation)
+            // Regenerate session id untuk keamanan (anti session fixation)
             session_regenerate_id(true);
 
             $_SESSION['user-id'] = $user['id'];
@@ -75,7 +82,11 @@ class login extends Controller {
             $_SESSION['user-email'] = $user['email'];
             $_SESSION['user-avatar'] = $user['avatar'] ?? 'default-avatar.png';
 
-            header('Location: ' . APP_PATH . '/dashboard/');
+            if ($user['role'] === 'admin') {
+                header('Location: ' . APP_PATH . '/admin/');
+            } else {
+                header('Location: ' . APP_PATH . '/petugas/');
+            }
             exit();
         } else {
             $_SESSION['login_error'] = 'Username atau password yang Anda masukkan salah.';
@@ -87,7 +98,6 @@ class login extends Controller {
     public function logout() {
         $this->start_default_session_app();
 
-        // Catat aktivitas logout jika ada user
         if (!empty($_SESSION['user-id'])) {
             $aktModel = $this->logic('Aktivitas_model');
             if ($aktModel) {
@@ -103,7 +113,7 @@ class login extends Controller {
                 $params["secure"], $params["httponly"]
             );
         }
-        @session_destroy();
+        session_destroy();
 
         header('Location: ' . APP_PATH . '/login/');
         exit();
